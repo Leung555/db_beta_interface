@@ -1,0 +1,33 @@
+launch:
+
+# args that can be set from the command line or a default will be used
+- arg:
+    name: "port_name"
+    default: "/dev/ttyUSB0"
+- arg:
+    name: "baudrate"
+    default: "4000000"
+- arg:
+    name: "scanRange"
+    default: "73"
+
+# include another launch/config file
+# - include:
+#     file: "$(find-pkg-share demo_nodes_cpp)/launch/topics/talker_listener.launch.py"
+
+- node:
+    pkg: "db_beta_interface"
+    exec: "position_controller"
+    name: "db_beta_interface"
+    output: 'screen'     
+    # namespace: "turtlesim1"
+    param:
+    -
+      name: "port_name"
+      value: "$(var port_name)"
+    -
+      name: "baudrate"
+      value: "$(var baudrate)"
+    -
+      name: "scanRange"
+      value: "$(var scanRange)"
