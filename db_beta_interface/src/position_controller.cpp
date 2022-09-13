@@ -24,7 +24,7 @@
 // Default setting
 // #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
 #define BAUDRATE 4000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
-#define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
+#define DEVICE_NAME "/dev/U2D2"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 bool scanDynamixelMode = true;
 
