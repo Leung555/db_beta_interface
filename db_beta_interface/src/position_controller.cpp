@@ -205,19 +205,19 @@ void db_beta_interface::setupDynamixel()
   for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
     // Use Position Control Mode
     result = dxl_wb->setPositionControlMode( id_array[dxl_cnt], &log);
-    if (result != COMM_SUCCESS) {
-      RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to set Position Control Mode of id: %d.", id_array[dxl_cnt]);
+    if (result == false) {
+      RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to set Position Control Mode id: %d.", id_array[dxl_cnt]);
     } else {
-      RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to set Position Control Mode.");
+      RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to set Position Control Mode id: %d.", id_array[dxl_cnt]);
     }
   }
   for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
     // Enable Torque of DYNAMIXEL
     result = dxl_wb->torqueOn(id_array[dxl_cnt], &log);
-    if (result != COMM_SUCCESS) {
-      RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to enable torque of id: %d.", id_array[dxl_cnt]);
+    if (result == false) {
+      RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to enable torque id: %d.", id_array[dxl_cnt]);
     } else {
-      RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to enable torque.");
+      RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to enable torque id: %d.", id_array[dxl_cnt]);
     }
   }
   for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
@@ -254,10 +254,10 @@ void db_beta_interface::disTorqueAllMotors()
   for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
     // Enable Torque of DYNAMIXEL
     result = dxl_wb->torqueOff(id_array[dxl_cnt], &log);
-    if (result != COMM_SUCCESS) {
-      RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to disable torque of id: %d.", id_array[dxl_cnt]);
+    if (result == false) {
+      RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to disable torque id: %d.", id_array[dxl_cnt]);
     } else {
-      RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to disable torque.");
+      RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to disable torque id: %d.", id_array[dxl_cnt]);
     }
   }
 }
