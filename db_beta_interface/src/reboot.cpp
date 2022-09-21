@@ -17,6 +17,7 @@
 #define ADDR_TORQUE_ENABLE 64
 #define ADDR_GOAL_POSITION 116
 #define ADDR_PRESENT_POSITION 132
+#define ADDR_HARDWARE_ERROR 70
 
 // Protocol version
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
@@ -24,7 +25,7 @@
 // Default setting
 // #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
 #define BAUDRATE 4000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
-#define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
+#define DEVICE_NAME "/dev/U2D2"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 bool scanDynamixelMode = true;
 
@@ -146,43 +147,93 @@ void db_beta_interface::initMsg()
 }
 
 int main(int argc, char * argv[]){
-    // initialize portHandler & packetHandler
-    rclcpp::init(argc, argv);
+  
+  // initialize portHandler & packetHandler
+  const char* port_name = DEVICE_NAME;
+  uint32_t baudrate = BAUDRATE;
+  uint8_t scanRange = 73;  
 
-    auto db_beta = std::make_shared<db_beta_interface>();
-    
-    const char *log;
-    bool result = false;
-    
-    // set operating mode & Enable Torque
-    const char* port_name = DEVICE_NAME;
-    uint32_t baudrate = BAUDRATE;
-    result = db_beta->initWorkbench(port_name, baudrate);
-    // cout << result <<endl;
-    if (result == false) {
-      RCLCPP_ERROR(rclcpp::get_logger("db_beta_node"), "Please check USB port name, baudrate");
-      return 0;
+  const char *log;
+  bool result = false;
+
+  portHandler = dynamixel::PortHandler::getPortHandler(DEVICE_NAME);
+  packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
+
+  // Open Serial Port
+  result = portHandler->openPort();
+  if (result == false)
+  {
+    printf("%s\n", log);
+    printf("Failed to open the port!\n");
+
+    return 0;
+  }
+  else{
+    printf("Success to open the port!\n");
+  }
+
+  // Set the baudrate of the serial port (use DYNAMIXEL Baudrate)
+  dxl_comm_result = portHandler->setBaudRate(BAUDRATE);
+  if (result == false)
+  {
+    printf("%s\n", log);
+    printf("Failed to set the baudrate!\n");
+
+    return 0;
+  }    
+  else{
+    printf("Success to set the baudrate!\n");
+  }  
+  ErrorFromSDK sdk_error = {0, false, false, 0};
+  
+  for (int dxl_id = 1; dxl_id < scanRange+1; dxl_id++){
+
+    sdk_error.dxl_comm_result = packetHandler->ping(portHandler, dxl_id, &sdk_error.dxl_error);
+    if (sdk_error.dxl_comm_result != COMM_SUCCESS)
+    {
+      // printf("Cannot ping motor id: %d\n", dxl_id);
     }
-    db_beta->initMsg();
+    else
+    {
+      printf("Success ping motor id: %d\n", dxl_id);
+      // Read Hardware error status
+      uint8_t data_1_byte  = 0;
+      sdk_error.dxl_comm_result = packetHandler->read1ByteTxRx(
+        portHandler,
+        dxl_id,
+        ADDR_HARDWARE_ERROR,
+        &data_1_byte,
+        &sdk_error.dxl_error
+      );
+      if (sdk_error.dxl_comm_result != COMM_SUCCESS)
+      {
+        // printf("Cannot read Hardware Error Status! id: %d\n", dxl_id);
+      }    
+      else{
+        // printf("Success read Hardware Error Status! id: %d\n", dxl_id);
+      }
+      
+      // Check hardware error status if error then reboot
+      // cout << "Hardware error status: " << +data_1_byte << endl;
+      if (data_1_byte != 0){
+        cout << "Detect Hardware error status: " << +data_1_byte << endl;
+        sdk_error.dxl_comm_result = packetHandler->reboot(portHandler, dxl_id, &sdk_error.dxl_error);
+        if (sdk_error.dxl_comm_result != COMM_SUCCESS)
+        {
+          printf("Cannot reboot motor id: %d\n", dxl_id);
+        }    
+        else{
+          printf("Success reboot motor id: %d\n", dxl_id);
+        }
+      }
+      else{
+        cout << "Hardware work fine" << endl;
 
-    // Find dynamixel Motors
-    if (scanDynamixelMode){
-      // uint32_t baudrate[BAUDRATE_NUM] = {9600, 57600, 115200, 1000000, 2000000, 3000000, 4000000};
-      uint8_t range = 73;
-      uint8_t scanned_id[100];
-      uint8_t dxl_cnt = 0;
-      result = db_beta->scanMotors(scanned_id, dxl_cnt, range);
-      if (result == false) {
-        RCLCPP_ERROR(rclcpp::get_logger("db_beta_node"), "scanMotors ERROR");
-        return 0;
-      } 
+      }
     }
+  }
 
-    // store robot config data
-    RCLCPP_INFO(db_beta->get_logger(), "Number of joints : %d", db_beta->motor_cnt);
 
-    // Check dynamixel data collection
-    db_beta->reboot();
 
     return 0;
 }
