@@ -11,6 +11,8 @@ Note: Installing ROS-Base Install (Bare Bones) might not have all dependencies r
 
 - create ros2 workspace folder and download packages into the src/ folder. use -b to specify the branch (ros2 humble) of the packages we want to use.
 ```
+sudo apt-get install ros-[ROS Distribution]-dynamixel-sdk
+
 cd /src/
 git clone https://github.com/Leung555/db_beta_interface.git
 git clone -b ros2 https://github.com/ROBOTIS-GIT/dynamixel-workbench.git
