@@ -3,20 +3,23 @@ The dynamixel motors interface software for Hexapod robot in ROS 2
 
 This project is developed based on the previous project in ROS 1 ([db_alpha_interface](https://github.com/Leung555/db_alpha_interface))
 
-This project is developed based on the ROS 2 humble with Ubuntu 22.04.1.
+This project is developed based on the ROS 2 (test with humble, jazzy version) with Ubuntu 22, 24
 
 ## Installation guide
-- First, install the ROS2 humble desktop version [ros2 humble documentation](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html).
+- First, install the ROS2 desktop version [Example: ros2 humble documentation](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html).
 Note: Installing ROS-Base Install (Bare Bones) might not have all dependencies related for build the packages
 
-- create ros2 workspace folder and download packages into the src/ folder. use -b to specify the branch (ros2 humble) of the packages we want to use.
+- install dynamixel related dependencies, and create ros2 workspace folder.
 ```
 sudo apt-get install ros-[ROS Distribution]-dynamixel-sdk
+sudo apt-get install ros-[ROS Distribution]-dynamixel-workbench
+sudo apt-get install ros-[ROS Distribution]-dynamixel-workbench-toolbox
+sudo apt-get install ros-[ROS Distribution]-dynamixel-workbench-msgs
 
-cd /src/
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+
 git clone https://github.com/Leung555/db_beta_interface.git
-git clone -b ros2 https://github.com/ROBOTIS-GIT/dynamixel-workbench.git
-git clone -b ros2 https://github.com/ROBOTIS-GIT/dynamixel-workbench-msgs.git
 ```
 
 ## Build
