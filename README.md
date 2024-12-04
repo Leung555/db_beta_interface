@@ -10,14 +10,15 @@ This project is developed based on the ROS 2 (test with humble, jazzy version) w
 Note: Installing ROS-Base Install (Bare Bones) might not have all dependencies related for build the packages
 
 - install dynamixel related dependencies, and create ros2 workspace folder.
+
 ```
 sudo apt-get install ros-[ROS Distribution]-dynamixel-sdk
-sudo apt-get install ros-[ROS Distribution]-dynamixel-workbench
-sudo apt-get install ros-[ROS Distribution]-dynamixel-workbench-toolbox
-sudo apt-get install ros-[ROS Distribution]-dynamixel-workbench-msgs
 
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
+git clone -b ros2 https://github.com/ROBOTIS-GIT/dynamixel-workbench.git
+git clone -b ros2 https://github.com/ROBOTIS-GIT/dynamixel-workbench-msgs.git
+git clone -b ros2 https://github.com/ROBOTIS-GIT/DynamixelSDK.git
 
 git clone https://github.com/Leung555/db_beta_interface.git
 ```
