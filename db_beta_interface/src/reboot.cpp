@@ -14,18 +14,18 @@
 
 // Control table address for X series (except XL-320)
 #define ADDR_OPERATING_MODE 11
-#define ADDR_TORQUE_ENABLE 64
-#define ADDR_GOAL_POSITION 116
-#define ADDR_PRESENT_POSITION 132
-#define ADDR_HARDWARE_ERROR 70
+#define ADDR_TORQUE_ENABLE 24
+#define ADDR_GOAL_POSITION 30
+#define ADDR_PRESENT_POSITION 37
+#define ADDR_HARDWARE_ERROR 50
 
 // Protocol version
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
 
 // Default setting
 // #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
-#define BAUDRATE 4000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
-#define DEVICE_NAME "/dev/U2D2"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
+#define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
+#define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 bool scanDynamixelMode = true;
 

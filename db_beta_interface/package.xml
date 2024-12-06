@@ -13,6 +13,10 @@
   <buildtool_depend>rclcpp</buildtool_depend>
   <buildtool_depend>std_msgs</buildtool_depend>
   <buildtool_depend>sensor_msgs</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>

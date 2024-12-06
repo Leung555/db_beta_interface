@@ -44,3 +44,23 @@ There are 2 functions :
 
 ## Dynamixel SDK for XL-320 Model
 For running the interface with XL-320 Model please check out **branch XL320**
+
+- This branch is developed based on the combiniation of **1) Dynamixel SDK and 2) db_beta_interface** for XL-320 Model with **ROS2** communication.
+
+## How to use
+- Install ROS2 and related dependencies
+- Clone this repository in your ros2 workspace folder
+```
+mkdir ~/ros2_ws/src && cd ~/ros2_ws/src
+git clone -b XL320 https://github.com/Leung555/DynamixelSDK.git
+```
+- build the package using colcon build
+```
+cd ~/ros2_ws/src
+colcon build
+```
+- try running the program 
+```
+ros2 run dynamixel_sdk_examples read_write_node_XL320
+```
+

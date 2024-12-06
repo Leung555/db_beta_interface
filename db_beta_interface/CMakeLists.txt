@@ -19,12 +19,17 @@ find_package(dynamixel_sdk REQUIRED)
 # find_package(dynamixel_workbench REQUIRED)
 find_package(dynamixel_workbench_toolbox REQUIRED)
 find_package(dynamixel_workbench_msgs REQUIRED)
-find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+# set dependencies
+set(dependencies
+rclcpp
+rclpy
+)
 
 # Build
 include_directories(
@@ -40,6 +45,15 @@ ament_target_dependencies(position_controller
   std_msgs
   sensor_msgs
 )
+# add_executable(position_controller_XL320 src/position_controller_XL320.cpp)
+# ament_target_dependencies(position_controller_XL320
+#   dynamixel_workbench_toolbox
+#   dynamixel_workbench_msgs
+#   dynamixel_sdk
+#   rclcpp
+#   std_msgs
+#   sensor_msgs
+# )
 add_executable(reboot src/reboot.cpp)
 ament_target_dependencies(reboot
   dynamixel_workbench_toolbox
@@ -83,4 +97,16 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+#PY --------------------------------------------------------------------
+# #install python modules
+# ament_python_install_package(${PROJECT_NAME})
+
+# #install python executables
+# install(PROGRAMS
+#   scripts/cpg.py
+#   DESTINATION lib/${PROJECT_NAME})
+
+#--------------------------------------------------------------------
+# export dependencies
+ament_export_dependencies(${dependencies})
 ament_package()
