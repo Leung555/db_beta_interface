@@ -14,19 +14,21 @@
 
 // Control table address for X series (except XL-320)
 #define ADDR_OPERATING_MODE 11
-#define ADDR_TORQUE_ENABLE 64
-#define ADDR_GOAL_POSITION 116
-#define ADDR_PRESENT_POSITION 132
+#define ADDR_TORQUE_ENABLE 24
+#define ADDR_GOAL_POSITION 30
+#define ADDR_PRESENT_POSITION 37
 
 // Protocol version
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
 
 // Default setting
 // #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
-#define BAUDRATE 4000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
-#define DEVICE_NAME "/dev/U2D2"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
+#define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
+#define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 bool scanDynamixelMode = true;
+bool TorqueOn = true;
+bool read_debug = false;
 
 dynamixel::PortHandler * portHandler;
 dynamixel::PacketHandler * packetHandler;
@@ -58,7 +60,7 @@ db_beta_interface::db_beta_interface()
     // set up Publisher
     jointstates_publisher = this->create_publisher<Jointstate>("motor_feedback", 10);
     timer_ = this->create_wall_timer(
-    10ms, std::bind(&db_beta_interface::readDxl_publish_callback, this));
+    100ms, std::bind(&db_beta_interface::readDxl_publish_callback, this));
 
 
     // set up subscriber
@@ -84,7 +86,11 @@ bool db_beta_interface::initWorkbench(const char* port_name, const uint32_t baud
     printf("Failed to init\n");
   }
   else
+  {
     printf("Succeed to init(%d)\n", baudrate);  
+  }
+  return result;
+
 }
 
 bool db_beta_interface::scanMotors(uint8_t scanned_id[], uint8_t dxl_cnt, uint8_t range)
@@ -115,6 +121,8 @@ bool db_beta_interface::scanMotors(uint8_t scanned_id[], uint8_t dxl_cnt, uint8_
       this->name_array.push_back(motor_name);
     }
   }
+  return result;
+
 }
 
 void db_beta_interface::showDynamixelInfo(){
@@ -126,7 +134,7 @@ void db_beta_interface::showDynamixelInfo(){
 
 bool db_beta_interface::initControlItems(){
   const char *log;
-  bool result = false;
+  bool result = true;
 
 	uint32_t dxl_id = id_array[0];
 
@@ -136,19 +144,21 @@ bool db_beta_interface::initControlItems(){
 	const ControlItem* present_position = dxl_wb->getItemInfo(dxl_id, "Present_Position");
 	if (present_position == NULL) return false;
 
-	const ControlItem* present_velocity = dxl_wb->getItemInfo(dxl_id, "Present_Velocity");
+	const ControlItem* present_velocity = dxl_wb->getItemInfo(dxl_id, "Present_Speed");
 	if (present_velocity == NULL) return false;
 
-	const ControlItem* present_current = dxl_wb->getItemInfo(dxl_id, "Present_Current");
+	const ControlItem* present_current = dxl_wb->getItemInfo(dxl_id, "Present_Load");
 	if (present_current == NULL) return false;
+  cout << "goal_position: " << goal_position << endl;
 
 	control_items["Goal_Position"] = goal_position;
 
 	control_items["Present_Position"] = present_position;
-	control_items["Present_Velocity"] = present_velocity;
-	control_items["Present_Current"] = present_current;
+	control_items["Present_Speed"] = present_velocity;
+	control_items["Present_Load"] = present_current;
+  cout << "result: " << result << endl;
 
-  return true;
+  return result;
 }
 
 void db_beta_interface::initSyncReadWriteHandler(){
@@ -172,10 +182,10 @@ void db_beta_interface::initSyncReadWriteHandler(){
   }
   
 	uint16_t read_start_adress = std::min(control_items["Present_Position"]->address, 
-                                        control_items["Present_Current"]->address);
+                                        control_items["Present_Load"]->address);
   uint16_t read_length = control_items["Present_Position"]->data_length + 
-                        control_items["Present_Velocity"]->data_length + 
-                        control_items["Present_Current"]->data_length;
+                        control_items["Present_Speed"]->data_length + 
+                        control_items["Present_Load"]->data_length;
   // Print adress and data length for debugging
   // printf("start_address position: %d, start_address current: %d\n", 
   // control_items["Present_Position"]->address, 
@@ -211,34 +221,37 @@ void db_beta_interface::setupDynamixel()
       RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to set Position Control Mode id: %d.", id_array[dxl_cnt]);
     }
   }
-  for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
-    // Enable Torque of DYNAMIXEL
-    result = dxl_wb->torqueOn(id_array[dxl_cnt], &log);
-    if (result == false) {
-      RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to enable torque id: %d.", id_array[dxl_cnt]);
-    } else {
-      RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to enable torque id: %d.", id_array[dxl_cnt]);
+  if (TorqueOn) 
+  {
+    for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
+      // Enable Torque of DYNAMIXEL
+      result = dxl_wb->torqueOn(id_array[dxl_cnt], &log);
+      if (result == false) {
+        RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to enable torque id: %d.", id_array[dxl_cnt]);
+      } else {
+        RCLCPP_INFO(rclcpp::get_logger("db_beta_interface"), "Succeeded to enable torque id: %d.", id_array[dxl_cnt]);
+      }
     }
   }
-  for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
-    // Set up Velocity and Accelerration profile
-    // result = dxl_wb->itemWrite(id_array[dxl_cnt], "LED", 1, &log);
-    // if (result == false){
-    //   printf("%s\n", log);
-    //   printf("Failed to light up LED");
-    // }
-    result = dxl_wb->itemWrite(id_array[dxl_cnt], "Profile_Acceleration", 50, &log);
-    if (result == false){
-      printf("%s\n", log);
-      printf("Failed to set Profile_Acceleration On id: %d\n", id_array[dxl_cnt]);
-    }
-    result = dxl_wb->itemWrite(id_array[dxl_cnt], "Profile_Velocity", 200, &log);
-    if (result == false){
-      printf("%s\n", log);
-      printf("Failed to set Profile_Velocity On id: %d\n", id_array[dxl_cnt]);
-    }
+  // for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
+  //   // Set up Velocity and Accelerration profile
+  //   // result = dxl_wb->itemWrite(id_array[dxl_cnt], "LED", 1, &log);
+  //   // if (result == false){
+  //   //   printf("%s\n", log);
+  //   //   printf("Failed to light up LED");
+  //   // }
+  //   result = dxl_wb->itemWrite(id_array[dxl_cnt], "Profile_Acceleration", 50, &log);
+  //   if (result == false){
+  //     printf("%s\n", log);
+  //     printf("Failed to set Profile_Acceleration On id: %d\n", id_array[dxl_cnt]);
+  //   }
+  //   result = dxl_wb->itemWrite(id_array[dxl_cnt], "Profile_Velocity", 200, &log);
+  //   if (result == false){
+  //     printf("%s\n", log);
+  //     printf("Failed to set Profile_Velocity On id: %d\n", id_array[dxl_cnt]);
+  //   }
 
-  }
+  // }
   for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
     // initialize Map between motor name and id
     motorNameIDPair[name_array[dxl_cnt]] = id_array[dxl_cnt];
@@ -293,12 +306,12 @@ void db_beta_interface::readDxl_publish_callback()
   // Read Multiple present position from motors
   uint8_t motor_cnt = this->motor_cnt;
 	uint8_t id_array_uint8[motor_cnt];
-	int32_t present_position[motor_cnt];
-	int32_t present_velocity[motor_cnt];
-	int32_t present_current[motor_cnt];
+	int16_t present_position[motor_cnt];
+	int16_t present_velocity[motor_cnt];
+	int16_t present_current[motor_cnt];
 
   for(int dxl_cnt =0; dxl_cnt< motor_cnt; dxl_cnt++){
-    present_position[dxl_cnt] = (int32_t) 0;    
+    present_position[dxl_cnt] = (int16_t) 0;    
 	  id_array_uint8[dxl_cnt] = (uint8_t) id_array[dxl_cnt];
   }
 
@@ -306,9 +319,12 @@ void db_beta_interface::readDxl_publish_callback()
 
   result = dxl_wb->syncRead(handler_index, id_array_uint8, motor_cnt, &log);
   if (result == false)
-  {
-    printf("%s\n", log);
-    printf("Failed to sync read position\n");
+  { 
+    if (read_debug){
+      printf("%s\n", log);
+      printf("Failed to sync read position\n");
+    }
+    return;
   }
 
   result = dxl_wb->getSyncReadData(handler_index, id_array_uint8, motor_cnt, 
@@ -319,15 +335,15 @@ void db_beta_interface::readDxl_publish_callback()
   if (result == false)  printf("%s\n", log);
 
   result = dxl_wb->getSyncReadData(handler_index, id_array_uint8, motor_cnt, 
-                                  control_items["Present_Velocity"]->address, 
-                                  control_items["Present_Velocity"]->data_length,
+                                  control_items["Present_Speed"]->address, 
+                                  control_items["Present_Speed"]->data_length,
                                   present_velocity,
                                   &log);
   if (result == false)  printf("%s\n", log);
 
   result = dxl_wb->getSyncReadData(handler_index, id_array_uint8, motor_cnt, 
-                                  control_items["Present_Current"]->address, 
-                                  control_items["Present_Current"]->data_length,
+                                  control_items["Present_Load"]->address, 
+                                  control_items["Present_Load"]->data_length,
                                   present_current,
                                   &log);
   if (result == false)  printf("%s\n", log);
@@ -380,7 +396,7 @@ void db_beta_interface::writeDxl_subscribe_callback(const Jointstate & msg)
 }
 
 int main(int argc, char * argv[]){
-    // initialize portHandler & packetHandler
+
     rclcpp::init(argc, argv);
 
     auto db_beta = std::make_shared<db_beta_interface>();
@@ -470,6 +486,7 @@ int main(int argc, char * argv[]){
     rclcpp::shutdown();
 
     // rclcpp::sleep_for(std::chrono::seconds(3));
+
     // Disable Torque of DYNAMIXEL
     db_beta->disTorqueAllMotors();
     // packetHandler->write1ByteTxRx(
