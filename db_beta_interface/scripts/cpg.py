@@ -36,6 +36,7 @@
 ## Simple talker demo that published std_msgs/Strings messages
 ## to the 'chatter' topic
 
+import time
 import rclpy
 from rclpy.node import Node
 
@@ -52,11 +53,11 @@ class MinimalPublisher(Node):
 
         # initiate publisher
         self.publisher_ = self.create_publisher(JointState, 'motor_command', 10)
-        timer_period = 0.01  # seconds
+        timer_period = 0.03  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # number of motors
-        self.num_motors = 1
+        self.num_motors = 18
 
         # Initialize Joint state
         self.joint_state = JointState()
@@ -65,6 +66,18 @@ class MinimalPublisher(Node):
         # self.joint_state.name = ["motor_1", "motor_2"] 
         # self.joint_state.position = [0, 0]
         self.joint_bias = [0.0] * self.num_motors
+
+        self.joint_bias = []
+        BC_bias = 0
+        CF_bias = -0.785 #(rad) = -45 deg
+        FT_bias = +0.785 #(rad) = -45 deg
+        for i in range(self.num_motors//3):
+            self.joint_bias.append(BC_bias)
+            self.joint_bias.append(CF_bias)
+            self.joint_bias.append(FT_bias)
+        print('self.joint_bias: ', self.joint_bias)
+
+        # self.joint_bias = [0.0]
         # self.joint_state.velocity = [0, 0]
         # self.joint_state.effort = [200, 200]
 
@@ -74,7 +87,7 @@ class MinimalPublisher(Node):
         #     self.joint_state.effort[i] = 200
 
         # CPG
-        MI = 0.05
+        MI = 0.1
         self.w11, self.w22 = 1.4, 1.4
         self.w12 =  0.18 + MI
         self.w21 = -0.18 - MI
@@ -82,31 +95,89 @@ class MinimalPublisher(Node):
         self.o1 = 0.01
         self.o2 = 0.01
 
+        # Leg config
+        self.BC_joints = [0, 3, 6, 9, 12, 15]
+        self.CF_joints = [1, 4, 7, 10, 13, 16]
+        self.FT_joints = [2, 5, 8, 11, 14, 17]
+        print('FT_joints: ', self.FT_joints)
+
+        # program counter
+        self.counter = 0
+        self.ep_length = 200
+        self.actuate = True
 
     def timer_callback(self):
-        self.o1 = math.tanh(self.w11*self.o1 + self.w12*self.o2)
-        self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
-
-        o1_com = self.o1*0.5
-        o2_com = self.o2*0.5
-
         # Reinitialize the JointState message based on the number of motors
         self.joint_state.name = [f"motor_{i+1}" for i in range(self.num_motors)]
         self.joint_state.position = [0.0] * self.num_motors
         self.joint_state.velocity = [0.0] * self.num_motors
         self.joint_state.effort = [0.0] * self.num_motors
 
+        # CPG
+        self.o1 = math.tanh(self.w11*self.o1 + self.w12*self.o2)
+        self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
+
+        o1_com = abs(self.o1*0.6)
+        o2_com = abs(self.o2*0.6)
+
+        # gait scheduler
+        if self.o1 > 0.2:
+            phase = 1
+        else:
+            phase = 0
+        
+        # motor mapping
+        if self.actuate:
+            if phase == 1:
+                for i in self.CF_joints:
+                    if i in [1, 4, 13]:
+                        self.joint_state.position[i] = self.joint_bias[i] + o1_com
+                    elif i in [7, 10, 16]:
+                        self.joint_state.position[i] = self.joint_bias[i]
+                for i in self.FT_joints:
+                    if i in [2, 5, 14]:
+                        self.joint_state.position[i] = self.joint_bias[i] + o1_com
+                    elif i in [8, 11, 17]:
+                        self.joint_state.position[i] = self.joint_bias[i]
+            if phase == 0:
+                for i in self.CF_joints:
+                    if i in [1, 4, 13]:
+                        self.joint_state.position[i] = self.joint_bias[i] 
+                    elif i in [7, 10, 16]:
+                        self.joint_state.position[i] = self.joint_bias[i] + o1_com
+                for i in self.FT_joints:
+                    if i in [2, 5, 14]:
+                        self.joint_state.position[i] = self.joint_bias[i]
+                    elif i in [8, 11, 17]:
+                        self.joint_state.position[i] = self.joint_bias[i] + o1_com
+
+        # Testing simple motor control
+        # for i in range(self.num_motors):
+        #     self.joint_state.position[i] = self.joint_bias[i] + o1_com
+
         # Update the header timestamp
         self.joint_state.header.stamp = self.get_clock().now().to_msg()
 
-        for i in range(self.num_motors):
-            self.joint_state.position[i] = self.joint_bias[i] + o1_com
 
         self.publisher_.publish(self.joint_state)
-        self.get_logger().info('Publishing: "%s"' % self.joint_state)
+        # minimal verbose
+        # self.get_logger().info('Publishing: "%s"' % self.get_clock().now().to_msg())
+        # self.get_logger().info('Publishing: "%s"' % self.joint_state)
+
+        # Check if the counter exceeds the threshold
+        if self.counter > self.ep_length:
+            self.get_logger().info(f'Counter exceeded the threshold of {self.ep_length}. Shutting down...')
+            # Destroy the node before shutting down
+            # self.destroy_node()
+            rclpy.shutdown()  # Gracefully stop the program
+        print('counter: ', self.counter)
+        self.counter += 1
 
 
 def main(args=None):
+    # for i in range(3, 0, -1):
+    #     time.sleep(1)
+    #     print("Program running in ", i)
     rclpy.init(args=args)
 
     minimal_publisher = MinimalPublisher()
