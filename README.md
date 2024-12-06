@@ -41,3 +41,6 @@ In this version, we need to change the configuration parameters in the code of t
 There are 2 functions :
 1. position control : enable all motors as position control mode.
 2. reboot
+
+## Dynamixel SDK for XL-320 Model
+For running the interface with XL-320 Model please check out **branch XL320**

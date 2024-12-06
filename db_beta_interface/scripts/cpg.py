@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2008, Willow Garage, Inc.
@@ -49,10 +49,13 @@ class MinimalPublisher(Node):
 
     def __init__(self):
         super().__init__('minimal_publisher')
+
+        # initiate publisher
         self.publisher_ = self.create_publisher(String, 'topic', 10)
         timer_period = 0.5  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
+        # declare variable and Joint state message
         self.motors_num = 18
         self.joint_state = JointState()
         # joint_state.name = ["id_11", "id_21", "id_31", "id_12", "id_22", "id_32", "id_13", "id_23", "id_33",   
@@ -69,16 +72,24 @@ class MinimalPublisher(Node):
         self.joint_state.effort = [200, 200, 200, 200, 200, 200, 200, 200, 200, 
                                 200, 200, 200, 200, 200, 200, 200, 200, 200]
 
+        # initialize default variables
         for i in range(self.motors_num):
             self.joint_state.velocity[i] = 0
             self.joint_state.effort[i] = 200
-        o1 = 0.9
-        o2 = 0.1
+
+        # CPG
+        MI = 0.05
+        self.w11, self.w22 = 1.4, 1.4
+        self.w12 =  0.18 + MI
+        self.w21 = -0.18 - MI
+        
+        self.o1 = 0.01
+        self.o2 = 0.01
 
 
     def timer_callback(self):
-        o1 = math.tanh(1.4*o1 + 0.3*o2 + 0.01)
-        o2 = math.tanh(1.4*o2 - 0.3*o1 + 0.01)
+        self.o1 = math.tanh(self.w11*self.o1 + self.w12*self.o2)
+        self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
 
         o1_com = o1*0.1
         o2_com = o2*0.1
