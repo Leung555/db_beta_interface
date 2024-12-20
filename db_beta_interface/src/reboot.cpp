@@ -23,7 +23,7 @@
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
 
 // Default setting
-#define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
+#define BAUDRATE 115200  // Default Baudrate of DYNAMIXEL X series
 // #define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
 #define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
