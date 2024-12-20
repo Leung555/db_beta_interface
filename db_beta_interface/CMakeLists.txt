@@ -21,6 +21,10 @@ find_package(dynamixel_workbench_toolbox REQUIRED)
 find_package(dynamixel_workbench_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+
+# Add the required dependencies for Python
+find_package(Python3 REQUIRED COMPONENTS shapely)
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -82,7 +86,9 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
   scripts/cpg.py
-  DESTINATION lib/${PROJECT_NAME}
+  scripts/GaitPlanner.py
+  scripts/neural_control.py
+DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
