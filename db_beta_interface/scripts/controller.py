@@ -56,66 +56,56 @@ class MinimalPublisher(Node):
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # number of motors
-        self.num_motors = 2
-
-        # Initialize Joint state
         self.joint_state = JointState()
-        # joint_state.name = ["id_11", "id_21", "id_31", "id_12", "id_22", "id_32", "id_13", "id_23", "id_33",   
-        #                 "id_41", "id_51", "id_61", "id_42", "id_52", "id_62", "id_43", "id_53", "id_63"] 
-        self.joint_state.name = ["motor_1", "motor_2"] 
-        # self.joint_state.position = [0, 0]
+        self.num_motors = 2
+        self.joint_state.name = [f"motor_{i+1}" for i in range(self.num_motors)]
         self.joint_bias = [0.0] * self.num_motors
-
-        # CPG
-        MI = 0.1
-        self.w11, self.w22 = 1.4, 1.4
-        self.w12 =  0.18 + MI
-        self.w21 = -0.18 - MI
         
-        self.o1 = 0.01
-        self.o2 = 0.01
 
-        self.counter   = 0
-        self.ep_length = 500
+        self.counter      = 0
+        self.cycle_time   = 20
+        self.ending_step  = 1000
+
+        self.stay_time = 1
+        self.joint_state.name = [f"motor_{i+1}" for i in range(self.num_motors)]
+        
+        # Define positions
+        self.position = [1, 0]
+        self.resting_position = [0, 0]
 
     def timer_callback(self):
+
         # Reinitialize the JointState message based on the number of motors
-        self.joint_state.name = [f"motor_{i+1}" for i in range(self.num_motors)]
         self.joint_state.position = [0.0] * self.num_motors
         self.joint_state.velocity = [0.0] * self.num_motors
         self.joint_state.effort = [0.0] * self.num_motors
 
-        # CPG
-        self.o1 = math.tanh(self.w11*self.o1 + self.w12*self.o2)
-        self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
-
-        o1_com = self.o1*1
-
-        print('o1_com :', o1_com)
-        # Testing simple motor control
-        if o1_com > 0:
-            self.joint_state.position[0] = self.joint_bias[0] + o1_com
-            self.joint_state.position[1] = self.joint_bias[1]
-        elif o1_com < 0:
-            self.joint_state.position[0] = self.joint_bias[0]
-            self.joint_state.position[1] = self.joint_bias[1] + o1_com
-
         # Update the header timestamp
         self.joint_state.header.stamp = self.get_clock().now().to_msg()
 
+        if self.counter < self.cycle_time//2:
+            for i in range(self.num_motors):
+                self.joint_state.position[i] = self.position[i]
+        elif self.counter > self.cycle_time//2:
+            for i in range(self.num_motors):
+                self.joint_state.position[i] = self.resting_position[i]
+        
+        if self.counter > self.cycle_time:
+            self.counter = 0
 
         self.publisher_.publish(self.joint_state)
+
         # minimal verbose
         # self.get_logger().info('Publishing: "%s"' % self.get_clock().now().to_msg())
         # self.get_logger().info('Publishing: "%s"' % self.joint_state)
 
         # Check if the counter exceeds the threshold
-        if self.counter > self.ep_length:
+        if self.counter > self.ending_step:
             self.get_logger().info(f'Counter exceeded the threshold of {self.ep_length}. Shutting down...')
             # Destroy the node before shutting down
             # self.destroy_node()
             rclpy.shutdown()  # Gracefully stop the program
-        # print('counter: ', self.counter)
+        print('counter: ', self.counter)
         self.counter += 1
 
 
