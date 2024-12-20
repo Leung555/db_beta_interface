@@ -14,16 +14,16 @@
 
 // Control table address for X series (except XL-320)
 #define ADDR_OPERATING_MODE 11
-#define ADDR_TORQUE_ENABLE 24
-#define ADDR_GOAL_POSITION 30
-#define ADDR_PRESENT_POSITION 37
+#define ADDR_TORQUE_ENABLE 64
+#define ADDR_GOAL_POSITION 116
+#define ADDR_PRESENT_POSITION 132
 
 // Protocol version
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
 
 // Default setting
-// #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
-#define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
+#define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
+// #define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
 #define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 bool scanDynamixelMode = true;
@@ -144,7 +144,7 @@ bool db_beta_interface::initControlItems(){
 	const ControlItem* present_position = dxl_wb->getItemInfo(dxl_id, "Present_Position");
 	if (present_position == NULL) return false;
 
-	const ControlItem* present_velocity = dxl_wb->getItemInfo(dxl_id, "Present_Speed");
+	const ControlItem* present_velocity = dxl_wb->getItemInfo(dxl_id, "Present_Velocity");
 	if (present_velocity == NULL) return false;
 
 	const ControlItem* present_current = dxl_wb->getItemInfo(dxl_id, "Present_Load");
@@ -154,7 +154,7 @@ bool db_beta_interface::initControlItems(){
 	control_items["Goal_Position"] = goal_position;
 
 	control_items["Present_Position"] = present_position;
-	control_items["Present_Speed"] = present_velocity;
+	control_items["Present_Velocity"] = present_velocity;
 	control_items["Present_Load"] = present_current;
   cout << "result: " << result << endl;
 
@@ -184,7 +184,7 @@ void db_beta_interface::initSyncReadWriteHandler(){
 	uint16_t read_start_adress = std::min(control_items["Present_Position"]->address, 
                                         control_items["Present_Load"]->address);
   uint16_t read_length = control_items["Present_Position"]->data_length + 
-                        control_items["Present_Speed"]->data_length + 
+                        control_items["Present_Velocity"]->data_length + 
                         control_items["Present_Load"]->data_length;
   // Print adress and data length for debugging
   // printf("start_address position: %d, start_address current: %d\n", 
@@ -335,8 +335,8 @@ void db_beta_interface::readDxl_publish_callback()
   if (result == false)  printf("%s\n", log);
 
   result = dxl_wb->getSyncReadData(handler_index, id_array_uint8, motor_cnt, 
-                                  control_items["Present_Speed"]->address, 
-                                  control_items["Present_Speed"]->data_length,
+                                  control_items["Present_Velocity"]->address, 
+                                  control_items["Present_Velocity"]->data_length,
                                   present_velocity,
                                   &log);
   if (result == false)  printf("%s\n", log);
