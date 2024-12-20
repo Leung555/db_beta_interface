@@ -20,7 +20,6 @@ git clone -b ros2 https://github.com/ROBOTIS-GIT/dynamixel-workbench.git
 git clone -b ros2 https://github.com/ROBOTIS-GIT/dynamixel-workbench-msgs.git
 git clone -b ros2 https://github.com/ROBOTIS-GIT/DynamixelSDK.git
 
-git clone https://github.com/Leung555/db_beta_interface.git
 ```
 
 ## Build
@@ -42,25 +41,26 @@ There are 2 functions :
 1. position control : enable all motors as position control mode.
 2. reboot
 
-## Dynamixel SDK for XL-320 Model
-For running the interface with XL-320 Model please check out **branch XL320**
+## Dynamixel SDK for 2XL-430-W250-T Model
+For running the interface with XL-320 Model please check out **branch 2XL430w250**
 
-- This branch is developed based on the combiniation of **1) Dynamixel SDK and 2) db_beta_interface** for XL-320 Model with **ROS2** communication.
+- This branch is developed based on the combiniation of **1) Dynamixel SDK and 2) db_beta_interface** for 2XL430w250 Model with **ROS2** communication.
 
 ## How to use
 - Install ROS2 and related dependencies
 - Clone this repository in your ros2 workspace folder
 ```
 mkdir ~/ros2_ws/src && cd ~/ros2_ws/src
-git clone -b XL320 https://github.com/Leung555/DynamixelSDK.git
+git clone -b 2XL430w250 https://github.com/Leung555/DynamixelSDK.git
 ```
 - build the package using colcon build
 ```
-cd ~/ros2_ws/src
+cd ~/ros2_ws
 colcon build
+
 ```
 - try running the program 
 ```
-ros2 run dynamixel_sdk_examples read_write_node_XL320
+ros2 run db_beta_interface cpg.py
 ```
 
