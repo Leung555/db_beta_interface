@@ -70,8 +70,12 @@ class MinimalPublisher(Node):
         self.joint_state.name = [f"motor_{i+1}" for i in range(self.num_motors)]
         
         # Define positions
-        self.position = [1, 0]
-        self.resting_position = [0, 0]
+        # self.position = [1, 0]
+        # self.resting_position = [0, 0]
+        self.motor_1 = [0.2, 0  ]
+        self.motor_2 = [0  , 0.2]
+        self.command_index = 0
+
 
     def timer_callback(self):
 
@@ -83,15 +87,24 @@ class MinimalPublisher(Node):
         # Update the header timestamp
         self.joint_state.header.stamp = self.get_clock().now().to_msg()
 
-        if self.counter < self.cycle_time//2:
-            for i in range(self.num_motors):
-                self.joint_state.position[i] = self.position[i]
-        elif self.counter > self.cycle_time//2:
-            for i in range(self.num_motors):
-                self.joint_state.position[i] = self.resting_position[i]
+        self.joint_state.position[0] = self.motor_1[self.command_index]
+        self.joint_state.position[1] = self.motor_2[self.command_index]
+        print('self.motor_1[self.command_index]: ', self.motor_1[self.command_index])
+
+            
+        # if self.counter < self.cycle_time//2:
+        #     for i in range(self.num_motors):
+        #         self.joint_state.position[i] = self.position[i]
+        # elif self.counter > self.cycle_time//2:
+        #     for i in range(self.num_motors):
+        #         self.joint_state.position[i] = self.resting_position[i]
         
         if self.counter > self.cycle_time:
             self.counter = 0
+            self.command_index += 1
+            print('self.command_index: ', self.command_index)
+            if self.command_index > len(self.motor_1)-1:
+                self.command_index = 0
 
         self.publisher_.publish(self.joint_state)
 
@@ -105,7 +118,7 @@ class MinimalPublisher(Node):
             # Destroy the node before shutting down
             # self.destroy_node()
             rclpy.shutdown()  # Gracefully stop the program
-        print('counter: ', self.counter)
+        # print('counter: ', self.counter)
         self.counter += 1
 
 
