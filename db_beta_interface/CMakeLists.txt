@@ -14,6 +14,8 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+# find_package(launch REQUIRED)
+# find_package(launch_ros REQUIRED)
 
 find_package(dynamixel_sdk REQUIRED)
 # find_package(dynamixel_workbench REQUIRED)
@@ -76,11 +78,10 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY 
-  launch
+install(
+  DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
-
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 # Install Python executables

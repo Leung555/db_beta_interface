@@ -45,10 +45,6 @@ from std_msgs.msg import String
 import math
 from sensor_msgs.msg import JointState
 
-from GaitPlanner import GaitPlanner
-from neural_control import CPG, MotorMapper
-
-
 class MinimalPublisher(Node):
 
     def __init__(self):
@@ -60,7 +56,7 @@ class MinimalPublisher(Node):
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # number of motors
-        self.num_motors = 18
+        self.num_motors = 1
 
         # Initialize Joint state
         self.joint_state = JointState()
@@ -68,29 +64,9 @@ class MinimalPublisher(Node):
         #                 "id_41", "id_51", "id_61", "id_42", "id_52", "id_62", "id_43", "id_53", "id_63"] 
         # self.joint_state.name = ["motor_1", "motor_2"] 
         # self.joint_state.position = [0, 0]
-        self.joint_bias = [0.0] * self.num_motors
-
-        self.joint_bias = []
-        BC_bias = 0
-        CF_bias = -0.785 #(rad) = -45 deg
-        FT_bias = +0.785 #(rad) = -45 deg
-        for i in range(self.num_motors//3):
-            self.joint_bias.append(BC_bias)
-            self.joint_bias.append(CF_bias)
-            self.joint_bias.append(FT_bias)
-        print('self.joint_bias: ', self.joint_bias)
-
-        # self.joint_bias = [0.0]
-        # self.joint_state.velocity = [0, 0]
-        # self.joint_state.effort = [200, 200]
-
-        # # initialize default variables
-        # for i in range(self.motors_num):
-        #     self.joint_state.velocity[i] = 0
-        #     self.joint_state.effort[i] = 200
 
         # CPG
-        MI = 0.0
+        MI = 0.2
         self.w11, self.w22 = 1.4, 1.4
         self.w12 =  0.18 + MI
         self.w21 = -0.18 - MI
@@ -98,27 +74,10 @@ class MinimalPublisher(Node):
         self.o1 = 0.01
         self.o2 = 0.01
 
-        # Leg config
-        self.BC_joints = [0, 3, 6,  9, 12, 15]  # [0, 3, 6, 9, 12, 15]
-        self.CF_joints = [1, 4, 7, 10, 13, 16] # [1, 4, 7, 10, 13, 16]
-        self.FT_joints = [2, 5, 8, 11, 14, 17] # [2, 5, 8, 11, 14, 17]
-        print('FT_joints: ', self.FT_joints)
-
         # program counter
         self.counter = 0
         self.ep_length = 5000
         self.actuate = True
-
-        #hardware param
-        self.default_angles = [0, 60, 120, 180, 240, 300]
-        self.angles = [0, 60, 120, 180, 240, 300]
-
-        # Controller & Gait Planner
-        self.cpg = CPG()
-        self.gait_planner_hexa = GaitPlanner(self.angles, max_legs_lifted=1, lifting_period=60)
-        self.motor_mapping = MotorMapper(6, 3)
-        self.motor_mapping.set_weight_leg([0, -0.1, 0.0])
-
 
     def timer_callback(self):
         # Reinitialize the JointState message based on the number of motors
@@ -127,18 +86,11 @@ class MinimalPublisher(Node):
         self.joint_state.velocity = [0.0] * self.num_motors
         self.joint_state.effort = [0.0] * self.num_motors
 
-        # Gait Planner
-        # print('timestep: ', i)
-        gait_plan, lifted_legs = self.gait_planner_hexa.gait_planner(self.angles)
-        print("Gait Plan (Timestep, Leg Lifting Order):", gait_plan)
-        # print("Remaining Lifted Legs (with timers):", lifted_legs)
-
-        self.cpg.step()
-        cpg_out = self.cpg.get_CPG_output()
-        motor_commands = self.motor_mapping.map_to_motors(cpg_out, gait_plan, self.joints_bias)
+        self.o1 = math.tanh(self.w11*self.o1 + self.w12*self.o2)
+        self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
 
         for i in range(self.num_motors):
-            self.joint_state.position[i] = motor_commands[i]
+            self.joint_state.position[i] = self.o1
 
         # Testing CPG Frequency #######
         # MI = self.counter // 20 * 0.02
@@ -147,43 +99,6 @@ class MinimalPublisher(Node):
         # self.w21 = -0.18 - MI
         ###############################
         
-        # CPG
-        # self.o1 = math.tanh(self.w11*self.o1 + self.w12*self.o2)
-        # self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
-
-        # o1_com = abs(self.o1*0.2)
-        # o2_com = abs(self.o2*0.2)
-
-        # gait scheduler
-        # if self.o1 > 0.2:
-        #     phase = 1
-        # else:
-        #     phase = 0
-        
-        # motor mapping test stepping old
-        # if self.actuate:
-        #     if phase == 1:
-        #         for i in self.CF_joints:
-        #             if i in [1, 4, 13]:
-        #                 self.joint_state.position[i] = self.joint_bias[i] + o1_com
-        #             elif i in [7, 10, 16]:
-        #                 self.joint_state.position[i] = self.joint_bias[i]
-        #         for i in self.FT_joints:
-        #             if i in [2, 5, 14]:
-        #                 self.joint_state.position[i] = self.joint_bias[i] + o1_com
-        #             elif i in [8, 11, 17]:
-        #                 self.joint_state.position[i] = self.joint_bias[i]
-        #     if phase == 0:
-        #         for i in self.CF_joints:
-        #             if i in [1, 4, 13]:
-        #                 self.joint_state.position[i] = self.joint_bias[i] 
-        #             elif i in [7, 10, 16]:
-        #                 self.joint_state.position[i] = self.joint_bias[i] + o1_com
-        #         for i in self.FT_joints:
-        #             if i in [2, 5, 14]:
-        #                 self.joint_state.position[i] = self.joint_bias[i]
-        #             elif i in [8, 11, 17]:
-        #                 self.joint_state.position[i] = self.joint_bias[i] + o1_com
 
         # Testing simple motor control
         # for i in range(self.num_motors):

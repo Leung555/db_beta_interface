@@ -12,19 +12,17 @@
 
 #include "db_beta_interface.h"
 
-// Control table address for X series (except XL-320)
-#define ADDR_OPERATING_MODE 11
+// Control table address for AX-12A
 #define ADDR_TORQUE_ENABLE 24
 #define ADDR_GOAL_POSITION 30
-#define ADDR_PRESENT_POSITION 37
-#define ADDR_HARDWARE_ERROR 50
-
+#define ADDR_PRESENT_POSITION 36
+#define ADDR_HARDWARE_ERROR 18
 // Protocol version
-#define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
+#define PROTOCOL_VERSION 1.0  // Default Protocol version of DYNAMIXEL X series.
 
 // Default setting
-// #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
-#define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
+// #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL AX-12A
+#define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL AX-12A
 #define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 bool scanDynamixelMode = true;
@@ -184,9 +182,12 @@ int main(int argc, char * argv[]){
   else{
     printf("Success to set the baudrate!\n");
   }  
+
   ErrorFromSDK sdk_error = {0, false, false, 0};
-  
+
+
   for (int dxl_id = 1; dxl_id < scanRange+1; dxl_id++){
+      // printf("ping motor id: %d\n", dxl_id);
 
     sdk_error.dxl_comm_result = packetHandler->ping(portHandler, dxl_id, &sdk_error.dxl_error);
     if (sdk_error.dxl_comm_result != COMM_SUCCESS)

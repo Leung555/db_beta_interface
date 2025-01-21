@@ -12,18 +12,18 @@
 
 #include "db_beta_interface.h"
 
-// Control table address for X series (except XL-320)
-#define ADDR_OPERATING_MODE 11
+// Control table address for AX-12A
 #define ADDR_TORQUE_ENABLE 24
 #define ADDR_GOAL_POSITION 30
-#define ADDR_PRESENT_POSITION 37
+#define ADDR_WHEEL_SPEED 32
+#define ADDR_PRESENT_POSITION 36
 
 // Protocol version
-#define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
+#define PROTOCOL_VERSION 1.0  // Default Protocol version of DYNAMIXEL X series.
 
 // Default setting
-// #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
-#define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL X series of Db_Alpha
+// #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL AX-12A
+#define BAUDRATE 1000000  // Default Baudrate of DYNAMIXEL AX-12A
 #define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 bool scanDynamixelMode = true;
@@ -369,9 +369,10 @@ void db_beta_interface::writeDxl_subscribe_callback(const Jointstate & msg)
 
   // Read Multiple present position from motors
   uint8_t goal_motor_cnt_msg = msg.position.size();
+  uint8_t goal_velocity_cnt_msg = msg.velocity.size();
 	uint8_t goal_id_array_uint8[goal_motor_cnt_msg];
 	int32_t goal_position[goal_motor_cnt_msg];
-	// int32_t present_velocity[motor_cnt];
+	int32_t goal_velocity[goal_velocity_cnt_msg];
 	// int32_t present_current[motor_cnt];
     cout << "goal_motor_cnt_msg: " << +goal_motor_cnt_msg << endl;
 
@@ -430,6 +431,35 @@ int main(int argc, char * argv[]){
     const char* port_name = DEVICE_NAME;
     uint32_t baudrate = BAUDRATE;
     uint8_t scanRange = 73;
+
+    int baudrate_;
+    std::string portname_;
+    int scanRange_;
+
+    // Retrieve parameters
+    db_beta->get_parameter("baudrate", baudrate_);
+    db_beta->get_parameter("portname", portname_);
+    db_beta->get_parameter("scanRange", scanRange_);
+
+    printf(baudrate_);
+    printf(portname_);
+    printf(scanRange_);
+
+    // Cast and assign to new variables
+    // port_name = portname_.c_str(); // Direct assignment as both are const char*
+    // baudrate = static_cast<uint32_t>(baudrate_); // Cast to uint32_t
+    // scanRange = static_cast<uint8_t>(scanRange_); // Cast to uint8_t
+
+    // const char* port_name = portname_;
+    // Log the parameters
+    // baudrate = uint32_t(baudrate_)
+    // port_name = portname_.c_str()
+    // scanRange = scanRange_
+
+    // RCLCPP_INFO(db_beta->get_logger(), "Baudrate: ", baudrate);
+    // RCLCPP_INFO(db_beta->get_logger(), "Portname: ", port_name);
+    // RCLCPP_INFO(db_beta->get_logger(), "Scan Range: ", scanRange);
+
     // if (argc < 4)
     // {
     //   printf("Please set '-port_name', '-baud_rate', -scanRange arguments for connected Dynamixels\n");
