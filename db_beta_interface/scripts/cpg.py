@@ -90,7 +90,10 @@ class MinimalPublisher(Node):
         self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
 
         for i in range(self.num_motors):
-            self.joint_state.position[i] = self.o1
+            if self.o1 > 0:
+                self.joint_state.velocity[i] = 100
+            elif self.o1 < 0:
+                self.joint_state.velocity[i] = 1100
 
         # Testing CPG Frequency #######
         # MI = self.counter // 20 * 0.02
@@ -116,12 +119,28 @@ class MinimalPublisher(Node):
         # Check if the counter exceeds the threshold
         if self.counter > self.ep_length:
             self.get_logger().info(f'Counter exceeded the threshold of {self.ep_length}. Shutting down...')
-            # Destroy the node before shutting down
+           # Destroy the node before shutting down
             # self.destroy_node()
             rclpy.shutdown()  # Gracefully stop the program
         # print('counter: ', self.counter)
         self.counter += 1
 
+    def shutdown_hook(self):
+        # Place your pre-shutdown logic here
+        self.get_logger().info('Performing pre-shutdown actions...')
+        for k in range(50):
+            print(k)
+            self.joint_state.name = [f"motor_{i+1}" for i in range(self.num_motors)]
+            self.joint_state.position = [0.0] * self.num_motors
+            self.joint_state.velocity = [0.0] * self.num_motors
+            self.joint_state.effort = [0.0] * self.num_motors
+            # Update the header timestamp
+            self.joint_state.header.stamp = self.get_clock().now().to_msg()
+            for j in range(self.num_motors):
+                self.joint_state.velocity[j] = 0.0
+            self.publisher_.publish(self.joint_state)
+        # Example: Stop the AMR
+        # self.stop_amr()
 
 def main(args=None):
     # for i in range(3, 0, -1):
@@ -131,13 +150,15 @@ def main(args=None):
 
     minimal_publisher = MinimalPublisher()
 
-    rclpy.spin(minimal_publisher)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    minimal_publisher.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(minimal_publisher)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Call the shutdown hook before destroying the node
+        minimal_publisher.shutdown_hook()
+        minimal_publisher.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':

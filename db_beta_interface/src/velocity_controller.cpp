@@ -36,6 +36,7 @@ dynamixel::PacketHandler * packetHandler;
 
 uint8_t dxl_error = 0;
 uint32_t goal_position = 0;
+uint32_t goal_velocity = 0;
 int dxl_comm_result = COMM_TX_FAIL;
 
 using namespace std;
@@ -138,8 +139,8 @@ bool db_beta_interface::initControlItems(){
 
 	uint32_t dxl_id = id_array[0];
 
-	const ControlItem* goal_position = dxl_wb->getItemInfo(dxl_id, "Goal_Position");
-	if (goal_position == NULL) return false;
+	const ControlItem* goal_velocity = dxl_wb->getItemInfo(dxl_id, "Moving_Speed");
+	if (goal_velocity == NULL) return false;
 
 	const ControlItem* present_position = dxl_wb->getItemInfo(dxl_id, "Present_Position");
 	if (present_position == NULL) return false;
@@ -149,9 +150,9 @@ bool db_beta_interface::initControlItems(){
 
 	const ControlItem* present_current = dxl_wb->getItemInfo(dxl_id, "Present_Load");
 	if (present_current == NULL) return false;
-  cout << "goal_position: " << goal_position << endl;
+  cout << "goal_velocity: " << goal_velocity << endl;
 
-	control_items["Goal_Position"] = goal_position;
+	control_items["Moving_Speed"] = goal_velocity;
 
 	control_items["Present_Position"] = present_position;
 	control_items["Present_Speed"] = present_velocity;
@@ -166,8 +167,8 @@ void db_beta_interface::initSyncReadWriteHandler(){
   const char *log;
   bool result = false;
   
-	uint16_t write_start_adress = control_items["Goal_Position"]->address;
-  uint16_t write_length = control_items["Goal_Position"]->data_length;
+	uint16_t write_start_adress = control_items["Moving_Speed"]->address;
+  uint16_t write_length = control_items["Moving_Speed"]->data_length;
   printf("write_start_adress: %d  \n", write_start_adress);
   printf("write_length: %d  \n", write_length);
 
@@ -214,7 +215,7 @@ void db_beta_interface::setupDynamixel()
 
   for(int dxl_cnt=0; dxl_cnt < motor_cnt; dxl_cnt++){
     // Use Position Control Mode
-    result = dxl_wb->setPositionControlMode( id_array[dxl_cnt], &log);
+    result = dxl_wb->setVelocityControlMode( id_array[dxl_cnt], &log);
     if (result == false) {
       RCLCPP_ERROR(rclcpp::get_logger("db_beta_interface"), "Failed to set Position Control Mode id: %d.", id_array[dxl_cnt]);
     } else {
@@ -369,28 +370,30 @@ void db_beta_interface::writeDxl_subscribe_callback(const Jointstate & msg)
 
   // Read Multiple present position from motors
   uint8_t goal_motor_cnt_msg = msg.position.size();
+  uint8_t goal_velocity_cnt_msg = msg.velocity.size();
 	uint8_t goal_id_array_uint8[goal_motor_cnt_msg];
 	int32_t goal_position[goal_motor_cnt_msg];
+	int32_t goal_velocity[goal_velocity_cnt_msg];
 	// int32_t present_current[motor_cnt];
     cout << "goal_motor_cnt_msg: " << +goal_motor_cnt_msg << endl;
 
   for(int dxl_cnt = 0; dxl_cnt< goal_motor_cnt_msg; dxl_cnt++){
 	  goal_id_array_uint8[dxl_cnt] = (uint8_t) motorNameIDPair[msg.name[dxl_cnt]];
-    goal_position[dxl_cnt] = dxl_wb->convertRadian2Value(goal_id_array_uint8[dxl_cnt], msg.position[dxl_cnt]);    
+    goal_velocity[dxl_cnt] = msg.velocity[dxl_cnt];    
     cout << "goal_id_array_uint8[dxl_cnt]: " << +dxl_cnt 
-        << "  goal_position[dxl_cnt]" << +goal_position[dxl_cnt] << endl;
+        << "  goal_velocity[dxl_cnt]" << +goal_velocity[dxl_cnt] << endl;
   }
 
   result = dxl_wb->syncWrite(handler_index, 
                               goal_id_array_uint8, 
                               goal_motor_cnt_msg, 
-                              goal_position, 
-                              1, //data_size (1 byte)
+                              goal_velocity, 
+                              2, //data_size (1 byte)
                               &log);
   if (result == false)
   {
     printf("%s\n", log);
-    printf("Failed to sync write position\n");
+    printf("Failed to sync write velocity\n");
   }
 }
 
