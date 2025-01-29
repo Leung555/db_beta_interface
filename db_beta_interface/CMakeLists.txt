@@ -49,6 +49,15 @@ ament_target_dependencies(position_controller
   std_msgs
   sensor_msgs
 )
+add_executable(velocity_controller src/velocity_controller.cpp)
+ament_target_dependencies(velocity_controller
+  dynamixel_workbench_toolbox
+  dynamixel_workbench_msgs
+  dynamixel_sdk
+  rclcpp
+  std_msgs
+  sensor_msgs
+)
 # add_executable(position_controller_XL320 src/position_controller_XL320.cpp)
 # ament_target_dependencies(position_controller_XL320
 #   dynamixel_workbench_toolbox
@@ -72,6 +81,7 @@ ament_target_dependencies(reboot
 # Install
 install(TARGETS
   position_controller
+  velocity_controller
   reboot
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -86,6 +96,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
   scripts/cpg.py
+  scripts/cpg_vel.py
 DESTINATION lib/${PROJECT_NAME}
 )
 
