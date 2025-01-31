@@ -376,7 +376,7 @@ void db_beta_interface::writeDxl_subscribe_callback(const Jointstate & msg)
   const uint8_t handler_index = 0;
 
   // Read Multiple present position from motors
-  uint8_t goal_motor_cnt_msg = msg.position.size();
+  uint8_t goal_motor_cnt_msg = msg.velocity.size();
 	uint8_t goal_id_array_uint8[goal_motor_cnt_msg];
 	int32_t goal_position[goal_motor_cnt_msg];
 	int32_t goal_velocity[goal_motor_cnt_msg];
@@ -395,7 +395,7 @@ void db_beta_interface::writeDxl_subscribe_callback(const Jointstate & msg)
                               goal_id_array_uint8, 
                               goal_motor_cnt_msg, 
                               goal_velocity, 
-                              4, //data_size (1 byte)
+                              1, //data_size (1 byte)
                               &log);
   if (result == false)
   {
