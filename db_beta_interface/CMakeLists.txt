@@ -40,6 +40,15 @@ ament_target_dependencies(position_controller
   std_msgs
   sensor_msgs
 )
+add_executable(currentbased_position src/currentbased_position.cpp)
+ament_target_dependencies(currentbased_position
+  dynamixel_workbench_toolbox
+  dynamixel_workbench_msgs
+  dynamixel_sdk
+  rclcpp
+  std_msgs
+  sensor_msgs
+)
 add_executable(reboot src/reboot.cpp)
 ament_target_dependencies(reboot
   dynamixel_workbench_toolbox
@@ -53,6 +62,7 @@ ament_target_dependencies(reboot
 
 # Install
 install(TARGETS
+  currentbased_position
   position_controller
   reboot
   DESTINATION lib/${PROJECT_NAME}

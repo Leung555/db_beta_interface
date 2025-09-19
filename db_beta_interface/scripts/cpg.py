@@ -51,48 +51,59 @@ class MinimalPublisher(Node):
         super().__init__('minimal_publisher')
 
         # initiate publisher
-        self.publisher_ = self.create_publisher(String, 'topic', 10)
-        timer_period = 0.5  # seconds
+        self.publisher_ = self.create_publisher(JointState, 'motor_command', 10)
+        timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        # declare variable and Joint state message
+        # # declare variable and Joint state message
+        # self.motors_num = 18
+        # self.joint_state = JointState()
+        # # joint_state.name = ["id_11", "id_21", "id_31", "id_12", "id_22", "id_32", "id_13", "id_23", "id_33",   
+        # #                 "id_41", "id_51", "id_61", "id_42", "id_52", "id_62", "id_43", "id_53", "id_63"] 
+        # self.joint_state.name = ["motor_1", "motor_2", "motor_3", "motor_4", "motor_5", "motor_6",
+        #                     "motor_7", "motor_8", "motor_9", "motor_10", "motor_11", "motor_12",
+        #                     "motor_13", "motor_14", "motor_15", "motor_16", "motor_17", "motor_18"]
+        # # self.joint_state.name = [0.0, -1.0] 
+        # self.joint_state.position = [0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                              0, 0, 0, 0, 0, 0, 0, 0, 0]
+        # self.joint_bias = [0] * self.motors_num
+
+        # self.joint_state.velocity = [0, 0, 0, 0, 0, 0, 0, 0, 0, 
+        #                         0, 0, 0, 0, 0, 0, 0, 0, 0]
+        # self.joint_state.effort = [200, 200, 200, 200, 200, 200, 200, 200, 200, 
+        #                         200, 200, 200, 200, 200, 200, 200, 200, 200]
+        
+        # 3 members
         self.motors_num = 18
         self.joint_state = JointState()
-        # joint_state.name = ["id_11", "id_21", "id_31", "id_12", "id_22", "id_32", "id_13", "id_23", "id_33",   
-        #                 "id_41", "id_51", "id_61", "id_42", "id_52", "id_62", "id_43", "id_53", "id_63"] 
-        self.joint_state.name = ["motor_1", "motor_2"] 
-        self.joint_state.name = [0.0, -1.0] 
-        self.joint_state.position = [0, 0, 0, 2, 2, 2, -1, -1, -1, 
-                                0, 0, 0, 2, 2, 2, -1, -1, -1]
-        self.joint_bias = [0, 0, 0, 2, 2, 2, -1, -1, -1, 
-                    0, 0, 0, 2, 2, 2, -1, -1, -1]
+        self.joint_state.name = [f"motor_{i+1}" for i in range(self.motors_num)]
+        self.joint_state.position = [0] * self.motors_num
+        self.joint_bias = [0] * self.motors_num
 
-        self.joint_state.velocity = [0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                                0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.joint_state.effort = [200, 200, 200, 200, 200, 200, 200, 200, 200, 
-                                200, 200, 200, 200, 200, 200, 200, 200, 200]
+        self.joint_state.velocity = [0] * self.motors_num
+        self.joint_state.effort = [0] * self.motors_num
 
         # initialize default variables
         for i in range(self.motors_num):
             self.joint_state.velocity[i] = 0
-            self.joint_state.effort[i] = 200
+            self.joint_state.effort[i] = 100
 
         # CPG
-        MI = 0.05
+        MI = 0.1
         self.w11, self.w22 = 1.4, 1.4
         self.w12 =  0.18 + MI
         self.w21 = -0.18 - MI
         
-        self.o1 = 0.01
-        self.o2 = 0.01
+        self.o1 = 0.1
+        self.o2 = 0.1
 
 
     def timer_callback(self):
         self.o1 = math.tanh(self.w11*self.o1 + self.w12*self.o2)
         self.o2 = math.tanh(self.w22*self.o2 + self.w21*self.o1)
 
-        o1_com = o1*0.1
-        o2_com = o2*0.1
+        o1_com = self.o1*0.1
+        o2_com = self.o2*0.1
 
         for i in range(self.motors_num):
             # if i%3 == 0:
@@ -101,6 +112,7 @@ class MinimalPublisher(Node):
             self.joint_state.position[i] = self.joint_bias[i] + o1_com
 
         self.publisher_.publish(self.joint_state)
+        print("joint_position", self.joint_state.position)
         self.get_logger().info('Publishing: "%s"' % self.joint_state)
 
 
